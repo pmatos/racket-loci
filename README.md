@@ -18,6 +18,6 @@ A `locus` is a distinct racket instance running on a different process communica
 
 * Implement remote loci
 
-## Sponsored
+## Sponsor
 
 This work is sponsored by [Linki Tools](https://linki.tools).
