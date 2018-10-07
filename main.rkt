@@ -29,8 +29,8 @@
 
 
 (module+ test
-  ;; Any code in this `loci` submodule runs when this file is run using DrRacket
-  ;; or with `raco loci`. The code here does not run when this file is
+  ;; Any code in this `test` submodule runs when this file is run using DrRacket
+  ;; or with `raco test`. The code here does not run when this file is
   ;; required by another module.
 
   (check-equal? (+ 2 2) 4))
