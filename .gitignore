@@ -1,0 +1,5 @@
+# Ignore temps
+*~
+
+# Ignore compiled zo files
+compiled/*.zo
