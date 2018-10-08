@@ -1,4 +1,4 @@
-# racket-loci
+# racket-loci ![CI Stamp](https://travis-ci.org/LinkiTools/racket-loci.svg?branch=master)
 
 Implementation of local and remote loci for Racket.
 
