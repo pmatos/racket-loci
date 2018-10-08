@@ -109,7 +109,6 @@
                                    (quote ,func-name))
                     (make-locus-channel/child))))
     (send/msg msg in)
-    (printf "msg: ~a~n" msg)
     (local-locus (locus-channel out in) process-handle err)))
 
 (define-for-syntax locus-body-counter 0)
