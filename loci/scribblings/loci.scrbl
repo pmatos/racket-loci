@@ -1,5 +1,5 @@
 #lang scribble/manual
-@require[@for-label[test
+@require[@for-label[loci
                     racket/base]]
 
 @title{loci}
@@ -7,4 +7,4 @@
 
 @defmodule[loci]
 
-Package Description Here
+Coming soon...
