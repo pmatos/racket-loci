@@ -2,4 +2,4 @@
 *~
 
 # Ignore compiled zo files
-compiled/*.zo
+compiled/
