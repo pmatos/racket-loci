@@ -10,8 +10,7 @@
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
-                     syntax/free-vars
-                     syntax/strip-context))
+                     syntax/free-vars))
 
 
 (provide
@@ -26,6 +25,7 @@
  locus-kill
 
  locus-channel-put/get
+ locus-message-allowed?
  (rename-out
   [locus-channel-put+ locus-channel-put]
   [locus-channel-get+ locus-channel-get]))
@@ -44,7 +44,7 @@
 
 (define (locus-channel-put+ ch datum)
   (locus-channel-put (resolve->channel ch) datum))
-(define (locus-channel-get+ ch datum)
+(define (locus-channel-get+ ch)
   (locus-channel-get (resolve->channel ch)))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@
      (subprocess-pid (local-locus-subproc ll)))
    (define (locus-wait ll)
      (subprocess-wait (local-locus-subproc ll))
-     (subprocess-status ll))
+     (subprocess-status (local-locus-subproc ll)))
    (define (locus-running? ll)
      (eq? (subprocess-status (local-locus-subproc ll)) 'running))
    (define (locus-exit-code ll)
@@ -100,24 +100,64 @@
 
   (let-values ([(process-handle out in err)
                 (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
-    (send/msg `((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
-                                    (if (bytes? bstr)
-                                        `(bytes->path ,bstr)
-                                        `(list ',(car bstr) (bytes->path ,(cadr bstr)) ',(caddr bstr))))
-                                 (quote ,func-name)))
-            in)
-
+    (define msg `(begin
+                   (require loci/private/locus-channel)
+                   ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
+                                      (if (bytes? bstr)
+                                          `(bytes->path ,bstr)
+                                          `(list ',(car bstr) (bytes->path ,(cadr bstr)) ',(caddr bstr))))
+                                   (quote ,func-name))
+                    (make-locus-channel/child))))
+    (send/msg msg in)
+    (printf "msg: ~a~n" msg)
     (local-locus (locus-channel out in) process-handle err)))
 
+(define-for-syntax locus-body-counter 0)
+
 (define-syntax (locus stx)
-  (syntax-case (replace-context #'here stx) ()
-    [(_ module-name (name ch) body ...)
-     #'(module module-name racket/base
-         (require "locus-local.rkt")
-         (provide name)
-         (define (name)
-           (let ([ch (make-locus-channel/child)])
-             body ...)))]))
+   (syntax-case stx ()
+    [(who ch body1 body ...)
+     (if (eq? (syntax-local-context) 'module-begin)
+         ;; when a `place' form is the only thing in a module body:
+         #`(begin #,stx)
+         ;; normal case:
+         (let ()
+           (unless (syntax-transforming-module-expression?)
+             (raise-syntax-error #false "can only be used in a module" stx))
+           (unless (identifier? #'ch)
+             (raise-syntax-error #false "expected an identifier" stx #'ch))
+           (set! locus-body-counter (add1 locus-body-counter))
+           (define module-name-stx
+             (datum->syntax stx
+               (string->symbol
+                (format "locus-body-~a" locus-body-counter))))
+           (with-syntax ([internal-def-name
+                          (syntax-local-lift-module
+                           #`(module* #,module-name-stx #false
+                               (provide main)
+                               (define (main ch)
+                                 body1 body ...)
+                               ;; The existence of this submodule makes the
+                               ;; enclosing submodule preserved by `raco exe`:
+                               (module declare-preserve-for-embedding '#%kernel)))])
+             #`(locus/proc (#%variable-reference) '#,module-name-stx 'who))))]
+     [(_ ch)
+      (raise-syntax-error #false "expected at least one body expression" stx)]))
+
+(define (locus/proc vr submod-name who)
+  (define name
+    (resolved-module-path-name
+     (variable-reference->resolved-module-path
+      vr)))
+  (when (and (symbol? name)
+             (not (module-predefined? `(quote ,name))))
+    (error who "the enclosing module's resolved name is not a path or predefined"))
+  (define submod-ref
+    (match name
+      [(? symbol?) `(submod (quote ,name) ,submod-name)]
+      [(? path?) `(submod ,name ,submod-name)]
+      [`(,p ,s ...) `(submod ,(if (symbol? p) `(quote ,p) p) ,@s ,submod-name)]))
+  (dynamic-locus submod-ref 'main))
 
 (define-syntax (locus/context stx)
   (syntax-parse stx
@@ -131,7 +171,7 @@
      #'(let ()
          (define l
            (locus ch
-             (let* ([v (locus-channel-get ch)]
+             (let* ([v (locus-channel-get+ ch)]
                     [fvs (vector-ref v i)] ...)
                (b* ch))))
          (define vec (vector fvs ...))
@@ -141,5 +181,5 @@
              (raise-arguments-error 'locus/context
                                     "free variable values must be allowable as locus messages"
                                     (symbol->string (syntax-e n)) e)))
-         (locus-channel-put l vec)
+         (locus-channel-put+ l vec)
          l)]))

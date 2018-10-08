@@ -9,7 +9,8 @@
  locus-channel
  locus-channel?
  locus-channel-put
- locus-channel-get)
+ locus-channel-get
+ locus-message-allowed?)
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -23,5 +24,7 @@
   (write (s-exp->fasl (serialize datum)) out)
   (flush-output out))
 
-(define (locus-channel-get ch datum)
+(define (locus-channel-get ch)
   (deserialize (fasl->s-exp (read (locus-channel-in ch)))))
+
+(define locus-message-allowed? serializable?)
