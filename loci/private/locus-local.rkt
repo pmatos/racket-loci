@@ -24,6 +24,8 @@
  locus-exit-code
  locus-kill
 
+ locus-dead-evt
+
  locus-channel-put/get
  locus-message-allowed?
  (rename-out
@@ -64,6 +66,9 @@
        [else (subprocess-status (local-locus-subproc ll))]))
    (define (locus-kill ll)
      (subprocess-kill (local-locus-subproc ll) #true))])
+
+(struct locus-dead-evt (sp)
+  #:property prop:evt (struct-field-index sp))
 
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
