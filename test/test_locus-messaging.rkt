@@ -88,22 +88,26 @@
         (handle-evt
          (apply choice-evt (map locus-dead-evt workers))
          (lambda (l)
-           (printf "A locus died :(~n")
-           (loop (sub1 locus-left))))
+           (printf "A locus finished~n")
+           (unless (null? remaining-work)
+             (define new-locus (locus ch (worker-factorial-go ch)))
+             (define id (gensym))
+             (locus-channel-put new-locus (msg-id 'master id))
+             (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
+             (loop (rest remaining-work) (cons new-locus
+                                               (filter locus-running? active-workers))))))
 
         (handle-evt
          (apply choice-evt workers)
-         (lambda (msg)
+         (match-lambda
+           [(struct ask-factorial (w v))
+            (cond
+              [(vector-ref cache v)
+               => (lambda (f) (locus-channel-put w (answer-factorial 'master v f)))]
+              [else (locus-channel-put w (answer-factorial 'master v #false))])]
 
-           (match
-               [(struct ask-factorial (w v))
-                (cond
-                  [(vector-ref cache v)
-                   => (lambda (f) (locus-channel-put w (answer-factorial 'master v f)))]
-                  [else (locus-channel-put w (answer-factorial 'master v #false))])]
+           [(struct answer-factorial (_ v f))
+            (vector-set! cache v f)]
 
-             [(struct answer-factorial (_ v f))
-              (vector-set! cache v f)]
-
-             [msg
-              (error 'main "unexpected msg, got: ~a" msg)]))))])))
+           [msg
+            (error 'main "unexpected msg, got: ~a" msg)])))])))

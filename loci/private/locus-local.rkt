@@ -3,7 +3,8 @@
 
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
-         "locus-channel.rkt"
+         (prefix-in ch: "locus-channel.rkt")
+         racket/list
          racket/match
          racket/path
 
@@ -27,27 +28,28 @@
  locus-dead-evt
 
  locus-channel-put/get
- locus-message-allowed?
- (rename-out
-  [locus-channel-put+ locus-channel-put]
-  [locus-channel-get+ locus-channel-get]))
+ ch:locus-message-allowed?
+ locus-channel-put
+ locus-channel-get)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Extend locus channels
 
 (define (locus-channel-put/get ch datum)
-  (locus-channel-put+ ch datum)
-  (locus-channel-get+ ch))
+  (locus-channel-put ch datum)
+  (locus-channel-get ch))
 
 (define (resolve->channel o)
   (match o
     [(? locus? l) (local-locus-ch l)]
-    [(? locus-channel? l) l]))
+    [(? ch:locus-channel? l) l]))
 
-(define (locus-channel-put+ ch datum)
-  (locus-channel-put (resolve->channel ch) datum))
-(define (locus-channel-get+ ch)
-  (locus-channel-get (resolve->channel ch)))
+(define (locus-channel-put ch datum)
+  (printf "~e~n" `(locus-channel-put ,ch ,datum))
+  (ch:locus-channel-put (resolve->channel ch) datum))
+(define (locus-channel-get ch)
+  (printf "~e~n" `(locus-channel-get ,ch))
+  (ch:locus-channel-get (resolve->channel ch)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; This file implement locus which run on the same machine as the master locus
@@ -65,7 +67,9 @@
        [(locus-running? ll) #false]
        [else (subprocess-status (local-locus-subproc ll))]))
    (define (locus-kill ll)
-     (subprocess-kill (local-locus-subproc ll) #true))])
+     (subprocess-kill (local-locus-subproc ll) #true))]
+  #:property prop:input-port (struct-field-index ch)
+  #:property prop:output-port (struct-field-index ch))
 
 (struct locus-dead-evt (sp)
   #:property prop:evt (struct-field-index sp))
@@ -75,6 +79,7 @@
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
 (define (dynamic-locus module-name func-name)
+  (printf "dynamic-locus: ~a, ~a~n" module-name func-name)
   (define (send/msg x ch)
     (write x ch)
     (flush-output ch))
@@ -84,10 +89,11 @@
       [(string? name) (string->bytes/locale name)]
       [(bytes? name) name]
       [(and (list? name)
-            (= 3 (length name))
-            (eq? (car name) 'submod))
-       `(submod ,(module-name->bytes (cadr name)) ,(caddr name))]
-      [else (error 'module->path "expects a path, string or submod declaration")]))
+            (>= (length name) 3)
+            (eq? (first name) 'submod))
+       (append `(submod ,(module-name->bytes (second name)))
+               (drop name 2))]
+      [else (error 'module->path "expects a path, string or submod declaration, got: ~a" name)]))
   (define (current-executable-path)
     (parameterize ([current-directory (find-system-path 'orig-dir)])
       (find-executable-path (find-system-path 'exec-file) #false)))
@@ -104,17 +110,20 @@
                                     "(eval (read))"))
 
   (let-values ([(process-handle out in err)
-                (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
+                (apply subprocess #false #false (current-error-port) worker-cmdline-list)])
     (define msg `(begin
                    (require loci/private/locus-channel)
                    ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
-                                      (if (bytes? bstr)
-                                          `(bytes->path ,bstr)
-                                          `(list ',(car bstr) (bytes->path ,(cadr bstr)) ',(caddr bstr))))
-                                   (quote ,func-name))
+                                        (if (bytes? bstr)
+                                            `(bytes->path ,bstr)
+                                            `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
+                                                      ',(drop bstr 2))))
+                                     (quote ,func-name))
                     (make-locus-channel/child))))
+    (printf "msg: ~e~n" msg)
     (send/msg msg in)
-    (local-locus (locus-channel out in) process-handle err)))
+    (printf "returning local-locus~n")
+    (local-locus (ch:locus-channel out in) process-handle err)))
 
 (define-for-syntax locus-body-counter 0)
 
@@ -149,6 +158,9 @@
       (raise-syntax-error #false "expected at least one body expression" stx)]))
 
 (define (locus/proc vr submod-name who)
+  (printf "vr: ~a~n" vr)
+  (printf "submod-name: ~a~n" submod-name)
+  (printf "who: ~a~n" who)
   (define name
     (resolved-module-path-name
      (variable-reference->resolved-module-path
@@ -175,15 +187,30 @@
      #'(let ()
          (define l
            (locus ch
-             (let* ([v (locus-channel-get+ ch)]
+             (let* ([v (locus-channel-get ch)]
                     [fvs (vector-ref v i)] ...)
                (b* ch))))
          (define vec (vector fvs ...))
          (for ([e (in-vector vec)]
                [n (in-list (syntax->list (quote-syntax (fvs ...))))])
-           (unless (locus-message-allowed? e)
+           (unless (ch:locus-message-allowed? e)
              (raise-arguments-error 'locus/context
                                     "free variable values must be allowable as locus messages"
                                     (symbol->string (syntax-e n)) e)))
-         (locus-channel-put+ l vec)
+         (locus-channel-put l vec)
          l)]))
+
+(module+ test
+
+  (require rackunit)
+
+  (test-case "Syntax locus/context tests"
+    (define v 2)
+    (check-= v (locus-channel-get
+                (locus/context ch
+                  (locus-channel-put ch v)))))
+
+  (test-case "Syntax locus tests"
+    (check-= 2 (locus-channel-get
+                (locus ch
+                  (locus-channel-put ch 2))))))
