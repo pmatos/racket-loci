@@ -7,7 +7,6 @@
 
 (provide
  (contract-out
-  [make-locus-channel/child (-> locus-channel?)]
   [locus-channel (input-port? output-port? . -> . locus-channel?)]
   [locus-channel? (any/c . -> . boolean?)]
   [locus-channel-put (locus-channel? locus-message-allowed? . -> . void?)]
@@ -23,9 +22,6 @@
 (struct locus-channel (in out)
   #:property prop:input-port (struct-field-index in)
   #:property prop:output-port (struct-field-index out))
-
-(define (make-locus-channel/child)
-  (locus-channel (current-input-port) (current-output-port)))
 
 (define (locus-channel-put ch datum)
   (define out (locus-channel-out ch))

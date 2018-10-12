@@ -109,21 +109,34 @@
                                     "-e"
                                     "(eval (read))"))
 
-  (let-values ([(process-handle out in err)
-                (apply subprocess #false #false (current-error-port) worker-cmdline-list)])
-    (define msg `(begin
-                   (require loci/private/locus-channel)
-                   ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
-                                        (if (bytes? bstr)
-                                            `(bytes->path ,bstr)
-                                            `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
-                                                      ',(drop bstr 2))))
-                                     (quote ,func-name))
-                    (make-locus-channel/child))))
-    (printf "msg: ~e~n" msg)
-    (send/msg msg in)
-    (printf "returning local-locus~n")
-    (local-locus (ch:locus-channel out in) process-handle err)))
+  (match-define-values (process-handle out in err)
+    (apply subprocess
+           #false
+           #false
+           #false
+           worker-cmdline-list))
+  (thread (thunk (copy-port out (current-output-port))))
+  (thread (thunk (copy-port err (current-error-port))))
+  (close-output-port in)
+
+  (define tmp (make-temporary-file))
+  (delete-file tmp)
+
+  (define listener (unix-socket-listen tmp))
+
+  (define msg `(begin
+                 (require loci/private/locus-channel)
+                 ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
+                                      (if (bytes? bstr)
+                                          `(bytes->path ,bstr)
+                                          `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
+                                                   ',(drop bstr 2))))
+                                   (quote ,func-name))
+                  (make-locus-channel/child))))
+  (printf "msg: ~e~n" msg)
+  (send/msg msg in)
+  (printf "returning local-locus~n")
+  (local-locus (ch:locus-channel out in) process-handle err))
 
 (define-for-syntax locus-body-counter 0)
 
