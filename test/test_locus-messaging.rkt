@@ -46,19 +46,7 @@
   (for ([i (range 1 (add1 (vector-length table)))])
     (printf "~a ~a~n" (add1 i) (vector-ref table i))))
 
-(module+ main
-
-  (require racket/os)
-
-  (printf "Parent PID: ~a~n" (getpid))
-
-  (define-values (cores N)
-    (command-line
-     #:args (cores factmax)
-     (values
-      (string->number cores)
-      (string->number factmax))))
-
+(define (main cores N)
   (define cache (make-hasheq))
 
   (define workers
@@ -120,3 +108,20 @@
 
            [msg
             (error 'main "unexpected msg, got: ~a" msg)])))])))
+
+
+(module+ main
+
+  (require racket/os)
+
+  (printf "Parent PID: ~a~n" (getpid))
+
+  (define-values (cores N)
+    (command-line
+     #:args (cores factmax)
+     (values
+      (string->number cores)
+      (string->number factmax))))
+
+
+  (main cores N))

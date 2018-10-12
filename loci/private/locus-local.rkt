@@ -4,10 +4,13 @@
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
          (prefix-in ch: "locus-channel.rkt")
+         racket/file
+         racket/function
          racket/list
          racket/match
          racket/path
-
+         racket/port
+         racket/unix-socket
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
@@ -32,9 +35,12 @@
  locus-channel-put
  locus-channel-get)
 
+;; Locus Logger
+(define-logger locus)
+(error-print-width 1024)
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; Extend locus channels
-
 (define (locus-channel-put/get ch datum)
   (locus-channel-put ch datum)
   (locus-channel-get ch))
@@ -45,13 +51,18 @@
     [(? ch:locus-channel? l) l]))
 
 (define (locus-channel-put ch datum)
+  (log-locus-debug "writing datum ~e to channel" datum)
   (ch:locus-channel-put (resolve->channel ch) datum))
 (define (locus-channel-get ch)
-  (ch:locus-channel-get (resolve->channel ch)))
+  (log-locus-debug "starting a read")
+  (define d (ch:locus-channel-get (resolve->channel ch)))
+  (log-locus-debug "read datum ~e from channel" d)
+  d)
+
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; This file implement locus which run on the same machine as the master locus
-(struct local-locus (ch subproc err)
+(struct local-locus (ch subproc out-pump err-pump)
   #:methods gen:locus
   [(define (locus-pid ll)
      (subprocess-pid (local-locus-subproc ll)))
@@ -77,9 +88,6 @@
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
 (define (dynamic-locus module-name func-name)
-  (define (send/msg x ch)
-    (write x ch)
-    (flush-output ch))
   (define (module-name->bytes name)
     (cond
       [(path? name) (path->bytes name)]
@@ -105,33 +113,50 @@
                                     (path->string (current-collects-path))
                                     "-e"
                                     "(eval (read))"))
-
+  (log-locus-debug "starting racket subprocess: ~e" worker-cmdline-list)
   (match-define-values (process-handle out in err)
     (apply subprocess
            #false
            #false
            #false
            worker-cmdline-list))
-  (thread (thunk (copy-port out (current-output-port))))
-  (thread (thunk (copy-port err (current-error-port))))
-  (close-output-port in)
+  (define stdout-pump (thread (thunk (copy-port out (current-output-port)))))
+  (define stderr-pump (thread (thunk (copy-port err (current-error-port)))))
 
   (define tmp (make-temporary-file))
   (delete-file tmp)
 
+  (log-locus-debug "creating listener")
   (define listener (unix-socket-listen tmp))
 
-  (define msg `(begin
-                 (require loci/private/locus-channel)
-                 ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
-                                      (if (bytes? bstr)
-                                          `(bytes->path ,bstr)
-                                          `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
-                                                   ',(drop bstr 2))))
-                                   (quote ,func-name))
-                  (make-locus-channel/child))))
-  (send/msg msg in)
-  (local-locus (ch:locus-channel out in) process-handle err))
+  (define start-thread
+    (thread
+     (thunk
+      (log-locus-debug "sending debug message to locus")
+      (define msg `(begin
+                     (require loci/private/locus-channel
+                              racket/unix-socket)
+                     (define-values (from-sock to-sock)
+                       (unix-socket-connect ,(path->string tmp)))
+                     ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
+                                          (if (bytes? bstr)
+                                              `(bytes->path ,bstr)
+                                              `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
+                                                       ',(drop bstr 2))))
+                                       (quote ,func-name))
+                      (locus-channel from-sock to-sock))))
+      (log-locus-debug "sending message into racket input port: ~e" msg)
+      (write msg in)
+      (flush-output in)
+      (close-output-port in))))
+
+  (log-locus-debug "waiting for locus to accept connection")
+  (define-values (from-sock to-sock)
+    (unix-socket-accept listener))
+  (thread-wait start-thread)
+
+  (log-locus-debug "successfully created locus")
+  (local-locus (ch:locus-channel from-sock to-sock) process-handle stdout-pump stderr-pump))
 
 (define-for-syntax locus-body-counter 0)
 
@@ -218,4 +243,17 @@
   (test-case "Syntax locus tests"
     (check-= 2 (locus-channel-get
                 (locus ch
-                  (locus-channel-put ch 2))))))
+                  (locus-channel-put ch 2))))
+
+    (check-= 0 (locus-wait (locus ch (sleep 1)))))
+
+  (test-case "Dynamic Locus tests"
+    (check-= 2 (locus-channel-get
+                (dynamic-locus '(submod ".." for-testing-1) 'test-1)))))
+
+(module+ for-testing-1
+
+  (provide test-1)
+
+  (define (test-1 ch)
+    (locus-channel-put ch 2)))
