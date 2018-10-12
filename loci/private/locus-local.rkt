@@ -45,10 +45,8 @@
     [(? ch:locus-channel? l) l]))
 
 (define (locus-channel-put ch datum)
-  (printf "~e~n" `(locus-channel-put ,ch ,datum))
   (ch:locus-channel-put (resolve->channel ch) datum))
 (define (locus-channel-get ch)
-  (printf "~e~n" `(locus-channel-get ,ch))
   (ch:locus-channel-get (resolve->channel ch)))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -79,7 +77,6 @@
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
 (define (dynamic-locus module-name func-name)
-  (printf "dynamic-locus: ~a, ~a~n" module-name func-name)
   (define (send/msg x ch)
     (write x ch)
     (flush-output ch))
@@ -133,9 +130,7 @@
                                                    ',(drop bstr 2))))
                                    (quote ,func-name))
                   (make-locus-channel/child))))
-  (printf "msg: ~e~n" msg)
   (send/msg msg in)
-  (printf "returning local-locus~n")
   (local-locus (ch:locus-channel out in) process-handle err))
 
 (define-for-syntax locus-body-counter 0)
@@ -171,9 +166,6 @@
       (raise-syntax-error #false "expected at least one body expression" stx)]))
 
 (define (locus/proc vr submod-name who)
-  (printf "vr: ~a~n" vr)
-  (printf "submod-name: ~a~n" submod-name)
-  (printf "who: ~a~n" who)
   (define name
     (resolved-module-path-name
      (variable-reference->resolved-module-path
