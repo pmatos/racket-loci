@@ -48,6 +48,10 @@
 
 (module+ main
 
+  (require racket/os)
+
+  (printf "Parent PID: ~a~n" (getpid))
+
   (define-values (cores N)
     (command-line
      #:args (cores factmax)
@@ -68,13 +72,13 @@
   ;; Send initial message to all
   (for ([(id w) (in-hash workers)]
         [v (in-list work-now)])
-    (locus-channel-put w (msg-id 'master id))
+    (locus-channel-put w (msg-id id))
     (locus-channel-put w (compute-v 'master v)))
 
   (let loop ([active-workers workers]
              [remaining-work work-later])
 
-    (printf "Remaining workers: ~a~n" (length workers))
+    (printf "Remaining workers: ~a~n" (hash-count workers))
     (printf "Remaining work: ~a~n" remaining-work)
 
     (cond
@@ -86,19 +90,24 @@
 
        (sync
         (handle-evt
-         (apply choice-evt (map locus-dead-evt workers))
+         (apply choice-evt (map locus-dead-evt (hash-values workers)))
          (lambda (l)
            (printf "A locus finished~n")
            (unless (null? remaining-work)
              (define new-locus (locus ch (worker-factorial-go ch)))
              (define id (gensym))
-             (locus-channel-put new-locus (msg-id 'master id))
+             (locus-channel-put new-locus (msg-id id))
              (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
-             (loop (rest remaining-work) (cons new-locus
-                                               (filter locus-running? active-workers))))))
+
+             (loop (hash-set
+                    (for/hasheq ([(id l) (in-hash active-workers)]
+                                 #:when (locus-running? l))
+                      (values id l))
+                    id new-locus)
+                   (rest remaining-work)))))
 
         (handle-evt
-         (apply choice-evt workers)
+         (apply choice-evt (hash-values workers))
          (match-lambda
            [(struct ask-factorial (w v))
             (cond
