@@ -4,6 +4,7 @@
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
          (prefix-in ch: "locus-channel.rkt")
+         racket/contract
          racket/file
          racket/function
          racket/list
@@ -30,13 +31,14 @@
 
  locus-dead-evt
 
- locus-channel-put/get
- ch:locus-message-allowed?
- locus-channel-put
- locus-channel-get)
+ (contract-out
+  [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
+  [ch:locus-message-allowed? (any/c . -> . boolean?)]
+  [locus-channel-put ((or/c ch:locus-channel? locus?) any/c . -> . void?)]
+  [locus-channel-get ((or/c ch:locus-channel? locus?) . -> . any/c)]))
 
 ;; Locus Logger
-(define-logger locus)
+(define-logger loci)
 (error-print-width 1024)
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -51,12 +53,12 @@
     [(? ch:locus-channel? l) l]))
 
 (define (locus-channel-put ch datum)
-  (log-locus-debug "writing datum ~e to channel" datum)
+  (log-loci-debug "writing datum ~e to channel" datum)
   (ch:locus-channel-put (resolve->channel ch) datum))
 (define (locus-channel-get ch)
-  (log-locus-debug "starting a read")
+  (log-loci-debug "starting a read")
   (define d (ch:locus-channel-get (resolve->channel ch)))
-  (log-locus-debug "read datum ~e from channel" d)
+  (log-loci-debug "read datum ~e from channel" d)
   d)
 
 
@@ -78,7 +80,11 @@
    (define (locus-kill ll)
      (subprocess-kill (local-locus-subproc ll) #true))]
   #:property prop:input-port (struct-field-index ch)
-  #:property prop:output-port (struct-field-index ch))
+  #:property prop:output-port (struct-field-index ch)
+  #:property prop:evt (lambda (s)
+                        (wrap-evt (ch:locus-channel-in (local-locus-ch s))
+                                  (lambda (unix-ch)
+                                    (ch:locus-channel-get (local-locus-ch s))))))
 
 (struct locus-dead-evt (sp)
   #:property prop:evt (struct-field-index sp))
@@ -113,26 +119,36 @@
                                     (path->string (current-collects-path))
                                     "-e"
                                     "(eval (read))"))
-  (log-locus-debug "starting racket subprocess: ~e" worker-cmdline-list)
+  (log-loci-debug "starting racket subprocess: ~e" worker-cmdline-list)
   (match-define-values (process-handle out in err)
     (apply subprocess
            #false
            #false
            #false
            worker-cmdline-list))
-  (define stdout-pump (thread (thunk (copy-port out (current-output-port)))))
-  (define stderr-pump (thread (thunk (copy-port err (current-error-port)))))
+  (define stdout-pump
+    (thread
+     (thunk
+      (log-loci-debug "pump for stdout starting")
+      (copy-port out (current-output-port))
+      (log-loci-debug "pump for stdout dying"))))
+  (define stderr-pump
+    (thread
+     (thunk
+      (log-loci-debug "pump for stderr starting")
+      (copy-port err (current-error-port))
+      (log-loci-debug "pump for stderr dying"))))
 
   (define tmp (make-temporary-file))
   (delete-file tmp)
 
-  (log-locus-debug "creating listener")
+  (log-loci-debug "creating listener")
   (define listener (unix-socket-listen tmp))
 
   (define start-thread
     (thread
      (thunk
-      (log-locus-debug "sending debug message to locus")
+      (log-loci-debug "sending debug message to locus")
       (define msg `(begin
                      (require loci/private/locus-channel
                               racket/unix-socket)
@@ -145,17 +161,17 @@
                                                        ',(drop bstr 2))))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
-      (log-locus-debug "sending message into racket input port: ~e" msg)
+      (log-loci-debug "sending message into racket input port: ~e" msg)
       (write msg in)
       (flush-output in)
       (close-output-port in))))
 
-  (log-locus-debug "waiting for locus to accept connection")
+  (log-loci-debug "waiting for locus to accept connection")
   (define-values (from-sock to-sock)
     (unix-socket-accept listener))
   (thread-wait start-thread)
 
-  (log-locus-debug "successfully created locus")
+  (log-loci-debug "successfully created locus")
   (local-locus (ch:locus-channel from-sock to-sock) process-handle stdout-pump stderr-pump))
 
 (define-for-syntax locus-body-counter 0)

@@ -1,8 +1,7 @@
 #lang racket
 ;; ---------------------------------------------------------------------------------------------------
 
-(require loci
-         racket/serialize)
+(require racket/serialize)
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -24,27 +23,27 @@
 
   ;; Get id
   (define id
-    (match (locus-channel-get ch)
+    (match (place-channel-get ch)
       [(struct msg-id (id)) id]
       [m (error 'worker-factorial-go "unexpected message, expected msg-id, got: ~a" m)]))
   (printf "worker ~a here~n" id)
 
   ;; Get value
   (define v
-    (match (locus-channel-get ch)
+    (match (place-channel-get ch)
       [(struct compute-v (_ v)) v]
       [m (error 'worker-factorial-go "unexpected message, expected compute-v, got: ~a" m)]))
 
   (define factorial
     (compute-factorial id ch v))
 
-  (locus-channel-put ch (answer-factorial id v factorial)))
+  (place-channel-put ch (answer-factorial id v factorial)))
 
 (define (compute-factorial id ch v)
   (printf "compute-factorial ~a ~a~n" id v)
 
   ;; Ask master for the factorial of v
-  (define v-fact (locus-channel-put/get ch (ask-factorial id v)))
+  (define v-fact (place-channel-put/get ch (ask-factorial id v)))
 
   (match v-fact
     [(struct answer-factorial (_ _ #false)) (* v (compute-factorial (- v 1)))]
@@ -60,7 +59,7 @@
 
   (define workers
     (for/hasheq ([i (range cores)])
-      (values (igensym) (locus ch (worker-factorial-go ch)))))
+      (values (igensym) (place ch (worker-factorial-go ch)))))
 
   (define work (shuffle (range 1 (add1 N))))
   (define-values (work-now work-later)
@@ -69,8 +68,8 @@
   ;; Send initial message to all
   (for ([(id w) (in-hash workers)]
         [v (in-list work-now)])
-    (locus-channel-put w (msg-id id))
-    (locus-channel-put w (compute-v 'master v)))
+    (place-channel-put w (msg-id id))
+    (place-channel-put w (compute-v 'master v)))
 
   (let loop ([active-workers workers]
              [remaining-work work-later])
@@ -88,21 +87,21 @@
 
        (sync
         (handle-evt
-         (apply choice-evt (map locus-dead-evt (hash-values workers)))
+         (apply choice-evt (map place-dead-evt (hash-values workers)))
          (lambda (l)
-           (printf "A locus finished~n")
+           (printf "A place finished~n")
            (unless (null? remaining-work)
-             (define new-locus (locus ch (worker-factorial-go ch)))
+             (define new-place (place ch (worker-factorial-go ch)))
              (define id (igensym))
-             (locus-channel-put new-locus (msg-id id))
-             (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
-             (printf "Requesting new locus ~a for ~a~n" id (car remaining-work))
+             (place-channel-put new-place (msg-id id))
+             (place-channel-put new-place (compute-v 'master (car remaining-work)))
+             (printf "Requesting new place ~a for ~a~n" id (car remaining-work))
              (loop (hash-set
                     (for/hasheq ([(id l) (in-hash active-workers)]
-                                 #:when (locus-running? l))
+                                 #:when (place-running? l))
                       (printf "worker ~a still alive~n" id)
                       (values id l))
-                    id new-locus)
+                    id new-place)
                    (rest remaining-work)))))
 
         (handle-evt
@@ -113,11 +112,11 @@
             (cond
               [(hash-ref cache v #false)
                => (lambda (f)
-                   (locus-channel-put (hash-ref active-workers w)
+                   (place-channel-put (hash-ref active-workers w)
                                       (answer-factorial 'master v f)))]
               [else
                (printf "workers: ~a~n" active-workers)
-               (locus-channel-put (hash-ref active-workers w)
+               (place-channel-put (hash-ref active-workers w)
                                   (answer-factorial 'master v #false))])
             (loop active-workers remaining-work)]
 
@@ -125,19 +124,19 @@
             (printf "Worker giving factorial answer ~a! = ~a~n" v f)
             (hash-set! cache v f)
 
-            (locus-kill (hash-ref active-workers w))
+            (place-kill (hash-ref active-workers w))
 
-            (define new-locus (locus ch (worker-factorial-go ch)))
+            (define new-place (place ch (worker-factorial-go ch)))
             (define id (igensym))
-            (locus-channel-put new-locus (msg-id id))
-            (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
-            (printf "Requesting new locus ~a for ~a~n" id (car remaining-work))
+            (place-channel-put new-place (msg-id id))
+            (place-channel-put new-place (compute-v 'master (car remaining-work)))
+            (printf "Requesting new place ~a for ~a~n" id (car remaining-work))
             (loop (hash-set
                    (for/hasheq ([(id l) (in-hash active-workers)]
-                                #:when (locus-running? l))
+                                #:when (place-running? l))
                      (printf "worker ~a still alive~n" id)
                      (values id l))
-                   id new-locus)
+                   id new-place)
                   (rest remaining-work))]
 
            [msg
