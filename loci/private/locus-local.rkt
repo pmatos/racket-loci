@@ -3,6 +3,7 @@
 
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
+         "utils.rkt"
          (prefix-in ch: "locus-channel.rkt")
          racket/contract
          racket/file
@@ -10,7 +11,6 @@
          racket/list
          racket/match
          racket/path
-         racket/port
          racket/unix-socket
          (for-syntax racket/base
                      racket/syntax

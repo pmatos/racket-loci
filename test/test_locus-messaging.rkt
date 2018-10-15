@@ -10,6 +10,7 @@
 (serializable-struct compute-v (sender v))
 (serializable-struct ask-factorial (sender v))
 (serializable-struct answer-factorial (sender v fact-v))
+(serializable-struct worker-done (sender))
 
 (define (igensym)
   (string->symbol
@@ -38,7 +39,8 @@
   (define factorial
     (compute-factorial id ch v))
 
-  (locus-channel-put ch (answer-factorial id v factorial)))
+  (locus-channel-put ch (answer-factorial id v factorial))
+  (locus-channel-put ch (worker-done id)))
 
 (define (compute-factorial id ch v)
   (printf "compute-factorial ~a ~a~n" id v)
@@ -47,7 +49,7 @@
   (define v-fact (locus-channel-put/get ch (ask-factorial id v)))
 
   (match v-fact
-    [(struct answer-factorial (_ _ #false)) (* v (compute-factorial (- v 1)))]
+    [(struct answer-factorial (_ _ #false)) (* v (compute-factorial id ch (- v 1)))]
     [(struct answer-factorial (_ _ f)) f]
     [m (error 'compute-factorial "unexpected message, expected answer-factorial, got: ~a" m)]))
 
@@ -56,7 +58,7 @@
     (printf "~a ~a~n" (add1 i) (vector-ref table i))))
 
 (define (main cores N)
-  (define cache (make-hasheq))
+  (define cache (make-hasheq (list (cons 1 1))))
 
   (define workers
     (for/hasheq ([i (range cores)])
@@ -108,15 +110,21 @@
         (handle-evt
          (apply choice-evt (hash-values workers))
          (match-lambda
+           [(struct worker-done (w))
+            (printf "Worker ~a is finished~n" w)
+
+            (loop remaining-work (hash-remove w active-workers))]
+
            [(struct ask-factorial (w v))
             (printf "Worker asking for ~a!~n" v)
             (cond
               [(hash-ref cache v #false)
                => (lambda (f)
+                   (printf "master knows ~a! = ~a~n" v f)
                    (locus-channel-put (hash-ref active-workers w)
                                       (answer-factorial 'master v f)))]
               [else
-               (printf "workers: ~a~n" active-workers)
+               (printf "master does not know ~a!~n" v)
                (locus-channel-put (hash-ref active-workers w)
                                   (answer-factorial 'master v #false))])
             (loop active-workers remaining-work)]
@@ -124,8 +132,6 @@
            [(struct answer-factorial (w v f))
             (printf "Worker giving factorial answer ~a! = ~a~n" v f)
             (hash-set! cache v f)
-
-            (locus-kill (hash-ref active-workers w))
 
             (define new-locus (locus ch (worker-factorial-go ch)))
             (define id (igensym))
