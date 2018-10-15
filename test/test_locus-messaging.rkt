@@ -6,11 +6,21 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-(serializable-struct msg-id (worker-id))
-(serializable-struct compute-v (sender v))
-(serializable-struct ask-factorial (sender v))
-(serializable-struct answer-factorial (sender v fact-v))
-(serializable-struct worker-done (sender))
+(serializable-struct msg-id
+  (worker-id)
+  #:transparent)
+(serializable-struct compute-v
+  (sender v)
+  #:transparent)
+(serializable-struct ask-factorial
+  (sender v)
+  #:transparent)
+(serializable-struct answer-factorial
+  (sender v fact-v)
+  #:transparent)
+(serializable-struct worker-done
+  (sender)
+  #:transparent)
 
 (define (igensym)
   (string->symbol
@@ -92,7 +102,8 @@
         (handle-evt
          (apply choice-evt (map locus-dead-evt (hash-values workers)))
          (lambda (l)
-           (printf "A locus finished~n")
+           (printf "A locus died~n")
+           (error "Locus died unexpectedly with result: ~a" (locus-wait l))
            (unless (null? remaining-work)
              (define new-locus (locus ch (worker-factorial-go ch)))
              (define id (igensym))
@@ -111,7 +122,8 @@
          (apply choice-evt (hash-values workers))
          (match-lambda
            [(struct worker-done (w))
-            (printf "Worker ~a is finished~n" w)
+            (define r (locus-wait (hash-ref workers w)))
+            (printf "Worker ~a is finished with status: ~a~n" w r)
 
             (loop remaining-work (hash-remove w active-workers))]
 
