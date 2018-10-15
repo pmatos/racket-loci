@@ -125,7 +125,7 @@
             (define r (locus-wait (hash-ref workers w)))
             (printf "Worker ~a is finished with status: ~a~n" w r)
 
-            (loop remaining-work (hash-remove w active-workers))]
+            (loop remaining-work (hash-remove active-workers w))]
 
            [(struct ask-factorial (w v))
             (printf "Worker asking for ~a!~n" v)

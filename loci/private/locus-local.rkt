@@ -29,7 +29,7 @@
  locus-kill
 
  (contract-out
-  [struct locus-dead-evt ((sp subprocess?))]
+  [struct locus-dead-evt ((locus locus?))]
   [locus-wait (locus? . -> . exact-nonnegative-integer?)]
 
   [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
@@ -85,8 +85,12 @@
                                   (lambda (unix-ch)
                                     (ch:locus-channel-get (local-locus-ch s))))))
 
-(struct locus-dead-evt (sp)
-  #:property prop:evt (struct-field-index sp))
+(struct locus-dead-evt (locus)
+  #:property prop:evt (lambda (s)
+                        (wrap-evt (local-locus-subproc (locus-dead-evt-locus s))
+                                  (lambda (subproc)
+                                    (locus-dead-evt-locus s)))))
+
 
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
