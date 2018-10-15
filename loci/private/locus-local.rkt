@@ -24,14 +24,14 @@
  dynamic-locus
 
  locus-pid
- locus-wait
  locus-running?
  locus-exit-code
  locus-kill
 
- locus-dead-evt
-
  (contract-out
+  [struct locus-dead-evt ((sp subprocess?))]
+  [locus-wait (locus? . -> . exact-nonnegative-integer?)]
+
   [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
   [ch:locus-message-allowed? (any/c . -> . boolean?)]
   [locus-channel-put ((or/c ch:locus-channel? locus?) any/c . -> . void?)]
@@ -60,7 +60,6 @@
   (define d (ch:locus-channel-get (resolve->channel ch)))
   (log-loci-debug "read datum ~e from channel" d)
   d)
-
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; This file implement locus which run on the same machine as the master locus
