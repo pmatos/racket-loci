@@ -65,7 +65,7 @@
 
 (define (print-factorial-table table)
   (for ([i (range 1 (add1 (hash-count table)))])
-    (printf "~a ~a~n" (add1 i) (vector-ref table i))))
+    (printf "~a ~a~n" i (hash-ref table i))))
 
 (define (main cores N)
   (define cache (make-hasheq (list (cons 1 1))))
@@ -93,14 +93,14 @@
 
     (cond
       [(and (null? remaining-work)
-            (null? active-workers))
+            (hash-empty? active-workers))
        (printf "All done~n")
        (print-factorial-table cache)]
       [else
 
        (sync
         (handle-evt
-         (apply choice-evt (map locus-dead-evt (hash-values workers)))
+         (apply choice-evt (map locus-dead-evt (hash-values active-workers)))
          (lambda (l)
            (printf "A locus died~n")
            (error "Locus died unexpectedly with result: ~a" (locus-wait l))
@@ -119,14 +119,8 @@
                    (rest remaining-work)))))
 
         (handle-evt
-         (apply choice-evt (hash-values workers))
+         (apply choice-evt (hash-values active-workers))
          (match-lambda
-           [(struct worker-done (w))
-            (define r (locus-wait (hash-ref workers w)))
-            (printf "Worker ~a is finished with status: ~a~n" w r)
-
-            (loop remaining-work (hash-remove active-workers w))]
-
            [(struct ask-factorial (w v))
             (printf "Worker asking for ~a!~n" v)
             (cond
@@ -145,18 +139,26 @@
             (printf "Worker giving factorial answer ~a! = ~a~n" v f)
             (hash-set! cache v f)
 
-            (define new-locus (locus ch (worker-factorial-go ch)))
-            (define id (igensym))
-            (locus-channel-put new-locus (msg-id id))
-            (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
-            (printf "Requesting new locus ~a for ~a~n" id (car remaining-work))
-            (loop (hash-set
-                   (for/hasheq ([(id l) (in-hash active-workers)]
-                                #:when (locus-running? l))
-                     (printf "worker ~a still alive~n" id)
-                     (values id l))
-                   id new-locus)
-                  (rest remaining-work))]
+            (match (locus-channel-get (hash-ref active-workers w))
+              [(struct worker-done (wid))
+               (when (not (eq? wid w))
+                 (error "expected some id from done worker"))
+               (define r (locus-wait (hash-ref active-workers w)))
+               (printf "Worker ~a is finished with status: ~a~n" w r)]
+              [_ (error "unexpected message from worker before finish")])
+
+            (cond
+              [(null? remaining-work) (loop (hash-remove active-workers w) '())]
+              [else
+               (define new-locus (locus ch (worker-factorial-go ch)))
+               (define id (igensym))
+               (locus-channel-put new-locus (msg-id id))
+               (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
+               (printf "Requesting new locus ~a for ~a~n" id (car remaining-work))
+               (loop (hash-set
+                      (hash-remove active-workers w)
+                      id new-locus)
+                     (rest remaining-work))])]
 
            [msg
             (error 'main "unexpected msg, got: ~a" msg)])))])))
