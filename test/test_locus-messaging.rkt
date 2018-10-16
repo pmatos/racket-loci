@@ -67,7 +67,8 @@
   (for ([i (range 1 (add1 (hash-count table)))])
     (printf "~a ~a~n" i (hash-ref table i))))
 
-(define (main cores N)
+(define (main cores* N)
+  (define cores (min cores* N))
   (define cache (make-hasheq (list (cons 1 1))))
 
   (define workers
@@ -103,20 +104,9 @@
          (apply choice-evt (map locus-dead-evt (hash-values active-workers)))
          (lambda (l)
            (printf "A locus died~n")
-           (error "Locus died unexpectedly with result: ~a" (locus-wait l))
-           (unless (null? remaining-work)
-             (define new-locus (locus ch (worker-factorial-go ch)))
-             (define id (igensym))
-             (locus-channel-put new-locus (msg-id id))
-             (locus-channel-put new-locus (compute-v 'master (car remaining-work)))
-             (printf "Requesting new locus ~a for ~a~n" id (car remaining-work))
-             (loop (hash-set
-                    (for/hasheq ([(id l) (in-hash active-workers)]
-                                 #:when (locus-running? l))
-                      (printf "worker ~a still alive~n" id)
-                      (values id l))
-                    id new-locus)
-                   (rest remaining-work)))))
+           (if (zero? (locus-wait l))
+               (loop active-workers remaining-work)
+               (error "Locus died unexpectedly with result" (locus-wait l)))))
 
         (handle-evt
          (apply choice-evt (hash-values active-workers))
