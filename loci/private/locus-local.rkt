@@ -12,6 +12,7 @@
          racket/match
          racket/path
          racket/unix-socket
+         syntax/modresolve
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
@@ -97,18 +98,12 @@
 ;; Based on the implementation of place-process in
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
-(define (dynamic-locus module-name func-name)
-  (define (module-name->bytes name)
+(define (dynamic-locus mod func-name)
+  (define (mod->bytes mod-path)
     (cond
-      [(path? name) (path->bytes name)]
-      [(string? name) (string->bytes/locale name)]
-      [(bytes? name) name]
-      [(and (list? name)
-            (>= (length name) 3)
-            (eq? (first name) 'submod))
-       (append `(submod ,(module-name->bytes (second name)))
-               (drop name 2))]
-      [else (error 'module->path "expects a path, string or submod declaration, got: ~a" name)]))
+      [(module-path? mod-path)
+       (path->bytes (resolve-module-path-index (module-path-index-join mod-path #false)))]
+      [else (path->bytes mod-path)]))
   (define (current-executable-path)
     (parameterize ([current-directory (find-system-path 'orig-dir)])
       (find-executable-path (find-system-path 'exec-file) #false)))
@@ -160,11 +155,7 @@
                               racket/unix-socket)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
-                     ((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
-                                          (if (bytes? bstr)
-                                              `(bytes->path ,bstr)
-                                              `(append (list ',(car bstr) (bytes->path ,(cadr bstr)))
-                                                       ',(drop bstr 2))))
+                     ((dynamic-require ,(mod->bytes mod)
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
       (log-loci-debug "sending message into racket input port: ~e" msg)
