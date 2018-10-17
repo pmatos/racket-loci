@@ -7,5 +7,5 @@
 (define pkg-authors '(pmatos))
 
 (define deps '("base" "unix-socket-lib"))
-(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
+(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "unix-socket-lib"))
 (define compile-omit-paths '("tests"))
