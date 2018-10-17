@@ -36,7 +36,7 @@
   [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
   [rename ch:locus-message-allowed? locus-message-allowed? (any/c . -> . boolean?)]
   [rename ch:locus-channel? locus-channel? (any/c . -> . boolean?)]
-  [locus-channel-put ((or/c ch:locus-channel? locus?) any/c . -> . void?)]
+  [locus-channel-put ((or/c ch:locus-channel? locus?) ch:locus-message-allowed? . -> . void?)]
   [locus-channel-get ((or/c ch:locus-channel? locus?) . -> . any/c)]))
 
 ;; Locus Logger
@@ -155,7 +155,7 @@
                               racket/unix-socket)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
-                     ((dynamic-require ,(mod->bytes mod)
+                     ((dynamic-require (bytes->path ,(mod->bytes mod))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
       (log-loci-debug "sending message into racket input port: ~e" msg)
