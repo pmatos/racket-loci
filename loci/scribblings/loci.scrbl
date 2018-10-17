@@ -65,7 +65,7 @@ properly due to memory allocation inter-thread locking.
   set to an empty input port, while the values of the
   @racket[current-output-port] and @racket[current-error-port]
   parameters are connected to the ports in the creating locus. 
-
+}
 @section[#:tag "exp-documentation"]{Experimental API Documentation}
 @defmodule[loci-dev]
 
