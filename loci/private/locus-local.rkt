@@ -33,7 +33,8 @@
   [locus-wait (locus? . -> . exact-nonnegative-integer?)]
   [locus? (any/c . -> . boolean?)]
   [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
-  [ch:locus-message-allowed? (any/c . -> . boolean?)]
+  [rename ch:locus-message-allowed? locus-message-allowed? (any/c . -> . boolean?)]
+  [rename ch:locus-channel? locus-channel? (any/c . -> . boolean?)]
   [locus-channel-put ((or/c ch:locus-channel? locus?) any/c . -> . void?)]
   [locus-channel-get ((or/c ch:locus-channel? locus?) . -> . any/c)]))
 
