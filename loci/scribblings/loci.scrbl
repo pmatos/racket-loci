@@ -12,7 +12,7 @@
 advantage of machines with multiple processors, cores or hardware
 threads... but this time for real!
 
-@margin-node{Currently, the loci library only works on Linux and
+@margin-note{Currently, the loci library only works on Linux and
 MacOS due to the use of unix channels for communication between loci.}
 
 This library attempts to follow the places API very closely. When this
