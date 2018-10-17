@@ -21,7 +21,6 @@
 (provide
  locus
  locus/context
- dynamic-locus
 
  locus-pid
  locus-running?
@@ -29,6 +28,7 @@
  locus-kill
 
  (contract-out
+  [dynamic-locus ((or/c module-path? path?) symbol? . -> . locus?)]
   [struct locus-dead-evt ((locus locus?))]
   [locus-wait (locus? . -> . exact-nonnegative-integer?)]
   [locus? (any/c . -> . boolean?)]
