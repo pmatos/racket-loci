@@ -31,7 +31,7 @@
  (contract-out
   [struct locus-dead-evt ((locus locus?))]
   [locus-wait (locus? . -> . exact-nonnegative-integer?)]
-
+  [locus? (any/c . -> . boolean?)]
   [locus-channel-put/get ((or/c ch:locus-channel? locus?) any/c . -> . any/c)]
   [ch:locus-message-allowed? (any/c . -> . boolean?)]
   [locus-channel-put ((or/c ch:locus-channel? locus?) any/c . -> . void?)]
