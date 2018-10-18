@@ -40,8 +40,8 @@
        (for ([dest (in-list dests)])
          (write-special v dest)
          (when flush?
-           (flush-output dest))))
-     (loop)]
+           (flush-output dest)))
+       (loop)]
     [else
      ;; Must be EOF
      (void)])))
