@@ -34,9 +34,9 @@
                (flush-output dest))
              (write-loop (+ bytes-written c2)))))
        (loop)]
-    [(procedure? c)
-     (let ([v (let-values ([(l col p) (port-next-location src)])
-                (c (object-name src) l col p))])
+      [(procedure? c)
+       (define-values (l col p) (port-next-location src))
+       (define v (c (object-name src) l col p))
        (for ([dest (in-list dests)])
          (write-special v dest)
          (when flush?
