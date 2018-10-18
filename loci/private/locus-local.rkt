@@ -3,6 +3,7 @@
 
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
+         "loci-log.rkt"
          "utils.rkt"
          (prefix-in ch: "locus-channel.rkt")
          racket/contract
@@ -38,10 +39,6 @@
   [rename ch:locus-channel? locus-channel? (any/c . -> . boolean?)]
   [locus-channel-put ((or/c ch:locus-channel? locus?) ch:locus-message-allowed? . -> . void?)]
   [locus-channel-get ((or/c ch:locus-channel? locus?) . -> . any/c)]))
-
-;; Locus Logger
-(define-logger loci)
-(error-print-width 1024)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Extend locus channels
@@ -129,15 +126,13 @@
     (thread
      (thunk
       (log-loci-debug "pump for stdout starting")
-      (file-stream-buffer-mode out 'none)
-      (copy-port out (current-output-port) #:flush? #true)
+      (copy-port 'stdout out (current-output-port) #:flush? #true)
       (log-loci-debug "pump for stdout dying"))))
   (define stderr-pump
     (thread
      (thunk
       (log-loci-debug "pump for stderr starting")
-      (file-stream-buffer-mode out 'none)
-      (copy-port err (current-error-port) #:flush? #true)
+      (copy-port 'stderr err (current-error-port) #:flush? #true)
       (log-loci-debug "pump for stderr dying"))))
 
   (define tmp (make-temporary-file))
@@ -153,6 +148,7 @@
       (define msg `(begin
                      (require loci/private/locus-channel
                               racket/unix-socket)
+                     (file-stream-buffer-mode (current-output-port) 'none)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
                      ((dynamic-require (bytes->path ,(mod->bytes mod))
