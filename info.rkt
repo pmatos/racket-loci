@@ -6,6 +6,6 @@
 (define version "0.1")
 (define pkg-authors '(pmatos))
 
-(define deps '("base"))
-(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
+(define deps '("base" "unix-socket-lib"))
+(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "unix-socket-lib"))
 (define compile-omit-paths '("tests"))

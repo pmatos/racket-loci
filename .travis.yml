@@ -38,4 +38,9 @@ before_install:
 script:
   - raco test -x .
   - racket test/test_locus-context.rkt 4
+  - racket test/test_locus-messaging.rkt 1 10
+  - racket test/test_locus-messaging.rkt 2 10
+  - racket test/test_locus-messaging.rkt 10 10
+  - racket test/test_locus-messaging.rkt 15 10
+  - racket test/test_locus-messaging.rkt 10 20
 
