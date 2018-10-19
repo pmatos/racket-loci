@@ -126,13 +126,13 @@
     (thread
      (thunk
       (log-loci-debug "pump for stdout starting")
-      (copy-port 'stdout out (current-output-port) #:flush? #true)
+      (copy-port out (current-output-port) #:flush? #true)
       (log-loci-debug "pump for stdout dying"))))
   (define stderr-pump
     (thread
      (thunk
       (log-loci-debug "pump for stderr starting")
-      (copy-port 'stderr err (current-error-port) #:flush? #true)
+      (copy-port err (current-error-port) #:flush? #true)
       (log-loci-debug "pump for stderr dying"))))
 
   (define tmp (make-temporary-file))
