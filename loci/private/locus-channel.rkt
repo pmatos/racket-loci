@@ -20,9 +20,10 @@
 ;; out is connected to the locus stdin
 ;; therefore one reads from in and writes to out
 (struct locus-channel (in out)
-  #:property prop:evt (lambda (s)
-                        (wrap-evt (locus-channel-in s)
-                                  (lambda (ch) s))))
+  #:property prop:evt
+  (lambda (s)
+    (wrap-evt (locus-channel-in s)
+              (lambda (ch) (locus-channel-get s)))))
 
 (define (locus-channel-put ch datum)
   (define out (locus-channel-out ch))

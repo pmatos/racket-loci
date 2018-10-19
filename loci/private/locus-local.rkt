@@ -79,16 +79,18 @@
      (subprocess-kill (local-locus-subproc ll) #true))]
   #:property prop:input-port (struct-field-index ch)
   #:property prop:output-port (struct-field-index ch)
-  #:property prop:evt (lambda (s)
-                        (wrap-evt (ch:locus-channel-in (local-locus-ch s))
-                                  (lambda (unix-ch)
-                                    (ch:locus-channel-get (local-locus-ch s))))))
+  #:property prop:evt
+  (lambda (s)
+    (wrap-evt (ch:locus-channel-in (local-locus-ch s))
+              (lambda (unix-ch)
+                (ch:locus-channel-get (local-locus-ch s))))))
 
 (struct locus-dead-evt (locus)
-  #:property prop:evt (lambda (s)
-                        (wrap-evt (local-locus-subproc (locus-dead-evt-locus s))
-                                  (lambda (subproc)
-                                    (locus-dead-evt-locus s)))))
+  #:property prop:evt
+  (lambda (s)
+    (wrap-evt (local-locus-subproc (locus-dead-evt-locus s))
+              (lambda (subproc)
+                (locus-dead-evt-locus s)))))
 
 
 ;; dynamic-locus
