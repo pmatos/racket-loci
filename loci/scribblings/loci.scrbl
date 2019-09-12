@@ -8,7 +8,7 @@
 
 @emph{Locus (pl. loci): the place where something is situated or occurs;} - @hyperlink["https://www.merriam-webster.com/dictionary/locus"]{Merriam-Webster Dictionary}
 
-@tech{Loci} enable the development of parallel programs that can take
+@tech{Loci} enables the development of parallel programs that can take
 advantage of machines with multiple processors, cores or hardware
 threads... but this time for real!
 
