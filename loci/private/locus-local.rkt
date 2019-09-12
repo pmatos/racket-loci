@@ -52,12 +52,12 @@
     [(? ch:locus-channel? l) l]))
 
 (define (locus-channel-put ch datum)
-  (log-loci-debug "writing datum ~e to channel" datum)
+  (log-debug "writing datum ~e to channel" datum)
   (ch:locus-channel-put (resolve->channel ch) datum))
 (define (locus-channel-get ch)
-  (log-loci-debug "starting a read")
+  (log-debug "starting a read")
   (define d (ch:locus-channel-get (resolve->channel ch)))
-  (log-loci-debug "read datum ~e from channel" d)
+  (log-debug "read datum ~e from channel" d)
   d)
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -117,7 +117,7 @@
                                     (path->string (current-collects-path))
                                     "-e"
                                     "(eval (read))"))
-  (log-loci-debug "starting racket subprocess: ~e" worker-cmdline-list)
+  (log-debug "starting racket subprocess: ~e" worker-cmdline-list)
   (match-define-values (process-handle out in err)
     (apply subprocess
            #false
@@ -127,26 +127,26 @@
   (define stdout-pump
     (thread
      (thunk
-      (log-loci-debug "pump for stdout starting")
+      (log-debug "pump for stdout starting")
       (copy-port out (current-output-port) #:flush? #true)
-      (log-loci-debug "pump for stdout dying"))))
+      (log-debug "pump for stdout dying"))))
   (define stderr-pump
     (thread
      (thunk
-      (log-loci-debug "pump for stderr starting")
+      (log-debug "pump for stderr starting")
       (copy-port err (current-error-port) #:flush? #true)
-      (log-loci-debug "pump for stderr dying"))))
+      (log-debug "pump for stderr dying"))))
 
   (define tmp (make-temporary-file))
   (delete-file tmp)
 
-  (log-loci-debug "creating listener")
+  (log-debug "creating listener")
   (define listener (unix-socket-listen tmp))
 
   (define start-thread
     (thread
      (thunk
-      (log-loci-debug "sending debug message to locus")
+      (log-debug "sending debug message to locus")
       (define msg `(begin
                      (require loci/private/locus-channel
                               racket/unix-socket)
@@ -156,17 +156,17 @@
                      ((dynamic-require (bytes->path ,(mod->bytes mod))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
-      (log-loci-debug "sending message into racket input port: ~e" msg)
+      (log-debug "sending message into racket input port: ~e" msg)
       (write msg in)
       (flush-output in)
       (close-output-port in))))
 
-  (log-loci-debug "waiting for locus to accept connection")
+  (log-debug "waiting for locus to accept connection")
   (define-values (from-sock to-sock)
     (unix-socket-accept listener))
   (thread-wait start-thread)
 
-  (log-loci-debug "successfully created locus")
+  (log-debug "successfully created locus")
   (local-locus (ch:locus-channel from-sock to-sock) process-handle stdout-pump stderr-pump))
 
 (define-for-syntax locus-body-counter 0)
