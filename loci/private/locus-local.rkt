@@ -97,11 +97,16 @@
 (define (mod->bytes mod-path)
   (match (resolve-module-path-index (module-path-index-join mod-path #false))
     [`(submod ,(? path? ps) ,ss ...)
-     `(submod (path->bytes ps) ,@ss)]
+     `(submod (bytes->path ,(path->bytes ps)) ,@ss)]
     [`(submod ,(? symbol? ps) ,ss ...)
-     `(submod ps ,@ss)]
-    [(? path? p) (path->bytes p)]
+     `(submod ,ps ,@ss)]
+    [(? path? p) `(bytes->path ,(path->bytes p))]
     [(? symbol? s) s]))
+
+;; We need this to be called on the remote side to massage the received value
+(define (bytes->mode mod-path)
+  ;; nop for now
+  mod-path)
 
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
@@ -158,7 +163,7 @@
                      (file-stream-buffer-mode (current-output-port) 'none)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
-                     ((dynamic-require (bytes->path ,(mod->bytes mod))
+                     ((dynamic-require (bytes->mod ,(mod->bytes mod))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
       (log-debug "sending message into racket input port: ~e" msg)
