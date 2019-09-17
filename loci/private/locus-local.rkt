@@ -92,17 +92,22 @@
               (lambda (subproc)
                 (locus-dead-evt-locus s)))))
 
+;; In order to send the module path through the channel we need to serialize and
+;; deserialize paths. So we use bytes for serialization.
+(define (mod->bytes mod-path)
+  (match (resolve-module-path-index (module-path-index-join mod-path #false))
+    [`(submod ,(? path? ps) ,ss ...)
+     `(submod (path->bytes ps) ,@ss)]
+    [`(submod ,(? symbol? ps) ,ss ...)
+     `(submod ps ,@ss)]
+    [(? path? p) (path->bytes p)]
+    [(? symbol? s) s]))
 
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
 (define (dynamic-locus mod func-name)
-  (define (mod->bytes mod-path)
-    (cond
-      [(module-path? mod-path)
-       (path->bytes (resolve-module-path-index (module-path-index-join mod-path #false)))]
-      [else (path->bytes mod-path)]))
   (define (current-executable-path)
     (parameterize ([current-directory (find-system-path 'orig-dir)])
       (find-executable-path (find-system-path 'exec-file) #false)))
