@@ -4,6 +4,7 @@
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
          "loci-log.rkt"
+         "path.rkt"
          "utils.rkt"
          (prefix-in ch: "locus-channel.rkt")
          racket/contract
@@ -13,7 +14,6 @@
          racket/match
          racket/path
          racket/unix-socket
-         syntax/modresolve
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
@@ -92,22 +92,6 @@
               (lambda (subproc)
                 (locus-dead-evt-locus s)))))
 
-;; In order to send the module path through the channel we need to serialize and
-;; deserialize paths. So we use bytes for serialization.
-(define (mod->bytes mod-path)
-  (match (resolve-module-path-index (module-path-index-join mod-path #false))
-    [`(submod ,(? path? ps) ,ss ...)
-     `(submod (bytes->path ,(path->bytes ps)) ,@ss)]
-    [`(submod ,(? symbol? ps) ,ss ...)
-     `(submod ,ps ,@ss)]
-    [(? path? p) `(bytes->path ,(path->bytes p))]
-    [(? symbol? s) s]))
-
-;; We need this to be called on the remote side to massage the received value
-(define (bytes->mode mod-path)
-  ;; nop for now
-  mod-path)
-
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
@@ -159,11 +143,12 @@
       (log-debug "sending debug message to locus")
       (define msg `(begin
                      (require loci/private/locus-channel
+                              loci/private/path
                               racket/unix-socket)
                      (file-stream-buffer-mode (current-output-port) 'none)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
-                     ((dynamic-require (bytes->mod ,(mod->bytes mod))
+                     ((dynamic-require (bytes->mod (quote ,(mod->bytes mod)))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
       (log-debug "sending message into racket input port: ~e" msg)
@@ -270,7 +255,7 @@
 
   (test-case "Dynamic Locus tests"
     (check-= 2 (locus-channel-get
-                (dynamic-locus '(submod ".." for-testing-1) 'test-1)))))
+                (dynamic-locus '(submod '.. for-testing-1) 'test-1)))))
 
 (module+ for-testing-1
 
