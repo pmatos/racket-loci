@@ -235,31 +235,3 @@
                                     (symbol->string (syntax-e n)) e)))
          (locus-channel-put l vec)
          l)]))
-
-(module+ test
-
-  (require rackunit)
-
-  (test-case "Syntax locus/context tests"
-    (define v 2)
-    (check-= v (locus-channel-get
-                (locus/context ch
-                  (locus-channel-put ch v)))))
-
-  (test-case "Syntax locus tests"
-    (check-= 2 (locus-channel-get
-                (locus ch
-                  (locus-channel-put ch 2))))
-
-    (check-= 0 (locus-wait (locus ch (sleep 1)))))
-
-  (test-case "Dynamic Locus tests"
-    (check-= 2 (locus-channel-get
-                (dynamic-locus '(submod '.. for-testing-1) 'test-1)))))
-
-(module+ for-testing-1
-
-  (provide test-1)
-
-  (define (test-1 ch)
-    (locus-channel-put ch 2)))
