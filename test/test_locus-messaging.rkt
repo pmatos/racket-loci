@@ -6,21 +6,21 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-(serializable-struct msg-id
+(struct msg-id
   (worker-id)
-  #:transparent)
-(serializable-struct compute-v
+  #:prefab)
+(struct compute-v
   (sender v)
-  #:transparent)
-(serializable-struct ask-factorial
+  #:prefab)
+(struct ask-factorial
   (sender v)
-  #:transparent)
-(serializable-struct answer-factorial
+  #:prefab)
+(struct answer-factorial
   (sender v fact-v)
-  #:transparent)
-(serializable-struct worker-done
+  #:prefab)
+(struct worker-done
   (sender)
-  #:transparent)
+  #:prefab)
 
 (define (igensym)
   (string->symbol
