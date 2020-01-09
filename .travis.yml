@@ -2,29 +2,23 @@ language: c
 
 sudo: false
 
+# 7.0 is the minimum supported racket version
 env:
   global:
     - RACKET_DIR=~/racket
   matrix:
-    - RACKET_VERSION=6.3
-    - RACKET_VERSION=6.4
-    - RACKET_VERSION=6.5
-    - RACKET_VERSION=6.6
-    - RACKET_VERSION=6.7
-    - RACKET_VERSION=6.8
-    - RACKET_VERSION=6.9
-    - RACKET_VERSION=6.10
-    - RACKET_VERSION=6.11
-    - RACKET_VERSION=6.12
     - RACKET_VERSION=7.0
-    - RACKET_VERSION=HEAD
+    - RACKET_VERSION=7.1
+    - RACKET_VERSION=7.2
+    - RACKET_VERSION=7.3
+    - RACKET_VERSION=7.4
+    - RACKET_VERSION=7.5
     - RACKET_VERSION=RELEASE
 
 # You may want to test against certain versions of Racket, without
 # having them count against the overall success/failure.
 matrix:
   allow_failures:
-    - env: RACKET_VERSION=HEAD
     - env: RACKET_VERSION=RELEASE
   fast_finish: true
 
@@ -36,11 +30,12 @@ before_install:
   - raco pkg install --link -n loci
   
 script:
-  - raco test -x .
   - racket test/test_locus-context.rkt 4
   - racket test/test_locus-messaging.rkt 1 10
   - racket test/test_locus-messaging.rkt 2 10
   - racket test/test_locus-messaging.rkt 10 10
   - racket test/test_locus-messaging.rkt 15 10
   - racket test/test_locus-messaging.rkt 10 20
+  - ! racket test/test_locus-error.rkt
+  - racket test/test_locus-print.rkt
 

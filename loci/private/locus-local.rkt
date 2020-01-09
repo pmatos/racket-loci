@@ -4,6 +4,7 @@
 (require "locus_gen.rkt"
          "locus-transferable_gen.rkt"
          "loci-log.rkt"
+         "path.rkt"
          "utils.rkt"
          (prefix-in ch: "locus-channel.rkt")
          racket/contract
@@ -13,7 +14,6 @@
          racket/match
          racket/path
          racket/unix-socket
-         syntax/modresolve
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
@@ -92,17 +92,11 @@
               (lambda (subproc)
                 (locus-dead-evt-locus s)))))
 
-
 ;; dynamic-locus
 ;; Based on the implementation of place-process in
 ;; https://github.com/racket/racket/blob/master/pkgs/racket-benchmarks/tests/racket/
 ;;                                            /benchmarks/places/place-processes.rkt
 (define (dynamic-locus mod func-name)
-  (define (mod->bytes mod-path)
-    (cond
-      [(module-path? mod-path)
-       (path->bytes (resolve-module-path-index (module-path-index-join mod-path #false)))]
-      [else (path->bytes mod-path)]))
   (define (current-executable-path)
     (parameterize ([current-directory (find-system-path 'orig-dir)])
       (find-executable-path (find-system-path 'exec-file) #false)))
@@ -149,11 +143,12 @@
       (log-debug "sending debug message to locus")
       (define msg `(begin
                      (require loci/private/locus-channel
+                              loci/private/path
                               racket/unix-socket)
                      (file-stream-buffer-mode (current-output-port) 'none)
                      (define-values (from-sock to-sock)
                        (unix-socket-connect ,(path->string tmp)))
-                     ((dynamic-require (bytes->path ,(mod->bytes mod))
+                     ((dynamic-require (bytes->mod (quote ,(mod->bytes mod)))
                                        (quote ,func-name))
                       (locus-channel from-sock to-sock))))
       (log-debug "sending message into racket input port: ~e" msg)
@@ -240,31 +235,3 @@
                                     (symbol->string (syntax-e n)) e)))
          (locus-channel-put l vec)
          l)]))
-
-(module+ test
-
-  (require rackunit)
-
-  (test-case "Syntax locus/context tests"
-    (define v 2)
-    (check-= v (locus-channel-get
-                (locus/context ch
-                  (locus-channel-put ch v)))))
-
-  (test-case "Syntax locus tests"
-    (check-= 2 (locus-channel-get
-                (locus ch
-                  (locus-channel-put ch 2))))
-
-    (check-= 0 (locus-wait (locus ch (sleep 1)))))
-
-  (test-case "Dynamic Locus tests"
-    (check-= 2 (locus-channel-get
-                (dynamic-locus '(submod ".." for-testing-1) 'test-1)))))
-
-(module+ for-testing-1
-
-  (provide test-1)
-
-  (define (test-1 ch)
-    (locus-channel-put ch 2)))
