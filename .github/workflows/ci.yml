@@ -32,6 +32,8 @@ jobs:
         variant: ${{ matrix.variant }}
     - name: Install
       run: raco pkg install --link -n loci
+    - name: Print temp directory
+      run: racket -e "(find-system-path 'temp-dir)"
     - name: Test (expect success)
       run: |
         racket test/test_locus-context.rkt 4
