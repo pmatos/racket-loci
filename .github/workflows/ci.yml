@@ -22,7 +22,7 @@ jobs:
           - racket-version: '7.3'
             variant: 'CS'
             
-    name: Racket ${{ matrix.racket-version }}
+    name: Racket ${{ matrix.racket-version }} [ ${{ matrix.variable }} ] / ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
     - name: Setup Racket
