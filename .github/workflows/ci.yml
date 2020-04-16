@@ -31,7 +31,7 @@ jobs:
         version: ${{ matrix.racket-version }}
     - name: Install
       run: raco pkg install --link -n loci
-    - name: Test
+    - name: Test (expect success)
       run: |
         racket test/test_locus-context.rkt 4
         racket test/test_locus-messaging.rkt 1 10
@@ -40,6 +40,8 @@ jobs:
         racket test/test_locus-messaging.rkt 15 10
         racket test/test_locus-messaging.rkt 10 20
         racket test/test_locus-print.rkt
+    - name: Test (expect failure)
+      run: |
         ! racket test/test_locus-error.rkt
         
           
