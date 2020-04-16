@@ -3,11 +3,12 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  runs-on: ubuntu-18.04
+  runs-on: ${{ matrix.os }}
   container: debian:buster-slim
   
   strategy:
     matrix:
+      os: [ubuntu-18.04, macos-latest]
       racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
       variant: ['regular', 'CS']
       exclude:
