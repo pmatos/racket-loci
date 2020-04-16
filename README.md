@@ -1,6 +1,6 @@
 # racket-loci 
 
-[![CI Stamp](https://travis-ci.org/LinkiTools/racket-loci.svg?branch=master)](https://travis-ci.org/LinkiTools/racket-loci)
+![CI](https://github.com/pmatos/racket-loci/workflows/CI/badge.svg?branch=master)
 
 Implementation of local and remote loci for Racket.
 
