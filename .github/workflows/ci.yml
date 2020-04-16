@@ -3,37 +3,38 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  runs-on: ${{ matrix.os }}
-  container: debian:buster-slim
+  test:
+    runs-on: ${{ matrix.os }}
+    container: debian:buster-slim
   
-  strategy:
-    matrix:
-      os: [ubuntu-18.04, macos-latest]
-      racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
-      variant: ['regular', 'CS']
-      exclude:
-        - racket-version: ['7.0', '7.1', '7.2', '7.3']
-          variable: ['CS']
-          
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+        racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
+        variant: ['regular', 'CS']
+        exclude:
+          - racket-version: ['7.0', '7.1', '7.2', '7.3']
+            variable: ['CS']
+            
     name: Racket ${{ matrix.racket-version }}
     steps:
-      - uses: actions/checkout@master
-      - name: Setup Racket
-        uses: Bogdanp/setup-racket@v0.6
-        with:
-          architecture: x64
-          version: ${{ matrix.racket-version }}
-      - name: Install
-        run: raco pkg install --link -n loci
-      - name: Test
-        run: |
-          racket test/test_locus-context.rkt 4
-          racket test/test_locus-messaging.rkt 1 10
-          racket test/test_locus-messaging.rkt 2 10
-          racket test/test_locus-messaging.rkt 10 10
-          racket test/test_locus-messaging.rkt 15 10
-          racket test/test_locus-messaging.rkt 10 20
-          racket test/test_locus-print.rkt
-          ! racket test/test_locus-error.rkt
+    - uses: actions/checkout@master
+    - name: Setup Racket
+      uses: Bogdanp/setup-racket@v0.6
+      with:
+        architecture: x64
+        version: ${{ matrix.racket-version }}
+    - name: Install
+      run: raco pkg install --link -n loci
+    - name: Test
+      run: |
+        racket test/test_locus-context.rkt 4
+        racket test/test_locus-messaging.rkt 1 10
+        racket test/test_locus-messaging.rkt 2 10
+        racket test/test_locus-messaging.rkt 10 10
+        racket test/test_locus-messaging.rkt 15 10
+        racket test/test_locus-messaging.rkt 10 20
+        racket test/test_locus-print.rkt
+        ! racket test/test_locus-error.rkt
         
           
