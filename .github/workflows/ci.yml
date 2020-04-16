@@ -8,7 +8,7 @@ jobs:
   
     strategy:
       matrix:
-        os: [ubuntu-18.04]
+        os: [ubuntu-18.04, macos-latest]
         racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
         variant: ['regular', 'CS']
         exclude:
@@ -30,7 +30,11 @@ jobs:
         architecture: x64
         version: ${{ matrix.racket-version }}
         variant: ${{ matrix.variant }}
-    - name: Install
+    - name: Install on macos
+      if: matrix.os == 'macos-latest'
+      run: sudo raco pkg install --link -n loci
+    - name: Install on ubuntu
+      if: matrix.os != 'macos-latest'
       run: raco pkg install --link -n loci
     - name: Test (expect success)
       run: |
