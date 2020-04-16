@@ -42,7 +42,8 @@ jobs:
         racket test/test_locus-messaging.rkt 10 20
         racket test/test_locus-print.rkt
     - name: Test (expect failure)
+      shell: bash --noprofile --norc ! {0}
       run: |
-        ! racket test/test_locus-error.rkt
+        racket test/test_locus-error.rkt
         
           
