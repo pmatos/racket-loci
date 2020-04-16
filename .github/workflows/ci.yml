@@ -25,16 +25,12 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Setup Racket
-      uses: Bogdanp/setup-racket@v0.6
+      uses: Bogdanp/setup-racket@v0.7
       with:
         architecture: x64
         version: ${{ matrix.racket-version }}
         variant: ${{ matrix.variant }}
-    - name: Install on macos
-      if: matrix.os == 'macos-latest'
-      run: sudo raco pkg install --link -n loci
-    - name: Install on ubuntu
-      if: matrix.os != 'macos-latest'
+    - name: Install
       run: raco pkg install --link -n loci
     - name: Test (expect success)
       run: |
