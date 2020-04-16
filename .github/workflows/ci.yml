@@ -20,6 +20,15 @@ jobs:
             variant: 'CS'
           - racket-version: '7.3'
             variant: 'CS'
+          - os: macos-latest
+            racket-version: '7.0'
+          - os: macos-latest
+            racket-version: '7.1'
+          - os: macos-latest
+            racket-version: '7.2'
+          - os: macos-latest
+            racket-version: '7.3
+'
             
     name: Racket ${{ matrix.racket-version }} [ ${{ matrix.variant }} ] / ${{ matrix.os }}
     steps:
