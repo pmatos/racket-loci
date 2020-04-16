@@ -131,7 +131,7 @@
       (copy-port err (current-error-port) #:flush? #true)
       (log-debug "pump for stderr dying"))))
 
-  (define tmp (make-temporary-file))
+  (define tmp (make-temporary-file "loci~a"))
   (delete-file tmp)
 
   (log-debug "creating listener")
