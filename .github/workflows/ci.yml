@@ -13,8 +13,14 @@ jobs:
         racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
         variant: ['regular', 'CS']
         exclude:
-          - racket-version: ['7.0', '7.1', '7.2', '7.3']
-            variable: ['CS']
+          - racket-version: '7.0'
+            variable: 'CS'
+          - racket-version: '7.1'
+            variable: 'CS'
+          - racket-version: '7.2'
+            variable: 'CS'
+          - racket-version: '7.3'
+            variable: 'CS'
             
     name: Racket ${{ matrix.racket-version }}
     steps:
