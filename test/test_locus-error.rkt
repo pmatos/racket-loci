@@ -15,4 +15,5 @@
 
   (printf "Starting core~n")
   (define r (locus-wait (go)))
-  (printf "Locus finished with ~a~n" r))
+  (printf "Locus finished with ~a~n" r)
+  (exit r))

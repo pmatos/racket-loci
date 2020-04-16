@@ -1,0 +1,48 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+  
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        racket-version: ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', 'current']
+        variant: ['regular', 'CS']
+        exclude:
+          - racket-version: '7.0'
+            variant: 'CS'
+          - racket-version: '7.1'
+            variant: 'CS'
+          - racket-version: '7.2'
+            variant: 'CS'
+          - racket-version: '7.3'
+            variant: 'CS'
+            
+    name: Racket ${{ matrix.racket-version }} [ ${{ matrix.variant }} ] / ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup Racket
+      uses: Bogdanp/setup-racket@v0.6
+      with:
+        architecture: x64
+        version: ${{ matrix.racket-version }}
+        variant: ${{ matrix.variant }}
+    - name: Install
+      run: raco pkg install --link -n loci
+    - name: Test (expect success)
+      run: |
+        racket test/test_locus-context.rkt 4
+        racket test/test_locus-messaging.rkt 1 10
+        racket test/test_locus-messaging.rkt 2 10
+        racket test/test_locus-messaging.rkt 10 10
+        racket test/test_locus-messaging.rkt 15 10
+        racket test/test_locus-messaging.rkt 10 20
+        racket test/test_locus-print.rkt
+    - name: Test (expect failure)
+      run: |
+        ! racket test/test_locus-error.rkt
+        
+          
