@@ -104,8 +104,8 @@
     (define p (find-system-path 'collects-dir))
     (if (complete-path? p)
         p
-        (path->complete-path p (or (path-only (current-executable-path))
-                                  (find-system-path 'orig-dir)))))
+        (path->complete-path p (or (path-only (resolve-path (current-executable-path)))
+                                   (find-system-path 'orig-dir)))))
   (define worker-cmdline-list (list (current-executable-path)
                                     "-X"
                                     (path->string (current-collects-path))
@@ -131,7 +131,7 @@
       (copy-port err (current-error-port) #:flush? #true)
       (log-debug "pump for stderr dying"))))
 
-  (define tmp (make-temporary-file))
+  (define tmp (make-temporary-file "loci~a"))
   (delete-file tmp)
 
   (log-debug "creating listener")
