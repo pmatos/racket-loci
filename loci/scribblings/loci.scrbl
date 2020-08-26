@@ -111,7 +111,7 @@ The @racket[locus] binding is protected in the same way as
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 @tech{ready for synchronization} if and only if @racket[l] has terminated.
-@ResultItself{locus-dead event}.
+The @tech{synchronization result} of a locus-dead event is the locus-dead event itself.
 
 If any pumping threads were created to connect a non-@tech{file-stream
   port} to the ports in the locus for @racket[l] (see
