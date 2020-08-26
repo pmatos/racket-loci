@@ -4,7 +4,7 @@
                     racket/base]]
 
 @title{loci}
-@author{@hyperlink["mailto:pmatos@linki.tools"]{Paulo Matos}}
+@author[(author+email "Paulo Matos" "pmatos@linki.tools")]
 
 @emph{Locus (pl. loci): the place where something is situated or occurs;} - @hyperlink["https://www.merriam-webster.com/dictionary/locus"]{Merriam-Webster Dictionary}
 
@@ -66,12 +66,6 @@ properly due to memory allocation inter-thread locking.
   @racket[current-output-port] and @racket[current-error-port]
   parameters are connected to the ports in the creating locus. 
 }
-@section[#:tag "exp-documentation"]{Experimental API Documentation}
-@defmodule[loci-dev]
-
-There are currently no differences between the development and the stable
-version of the @deftech{loci} library. Please refer to the @secref{documentation} for
-more information.
 
 @section[#:tag "motivation"]{Motivation}
 
