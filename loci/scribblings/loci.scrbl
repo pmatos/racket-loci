@@ -29,6 +29,10 @@ properly due to memory allocation inter-thread locking.
 @defmodule[loci]
 
 @defproc[(loci? [v any/c]) boolean?]{
+@defproc[(locus-enabled?) boolean?]{
+  Returns @racket[#t]. It exists for compatibility with the place API.
+  Loci are always enabled.
+  }
   Returns @racket[#t] if @racket[v] is a @deftech{locus descriptor}
   value, @racket[#f] otherwise. Every @tech{locus descriptor} is also
   a @tech{locus channel}.

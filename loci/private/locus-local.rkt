@@ -28,6 +28,8 @@
  locus-exit-code
  locus-kill
 
+ locus-enabled?
+ 
  (contract-out
   [dynamic-locus ((or/c module-path? path?) symbol? . -> . locus?)]
   [struct locus-dead-evt ((locus locus?))]
@@ -40,6 +42,9 @@
   [locus-channel-get ((or/c ch:locus-channel? locus?) . -> . any/c)]))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; For compatibility with places
+(define (locus-enabled?) #true)
+
 ;; Extend locus channels
 (define (locus-channel-put/get ch datum)
   (locus-channel-put ch datum)
