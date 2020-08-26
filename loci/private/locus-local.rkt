@@ -1,12 +1,10 @@
 #lang racket/base
 ;; ---------------------------------------------------------------------------------------------------
 
-(require "locus_gen.rkt"
-         "locus-transferable_gen.rkt"
-         "loci-log.rkt"
-         "path.rkt"
-         "utils.rkt"
-         (prefix-in ch: "locus-channel.rkt")
+(require (for-syntax racket/base
+                     racket/syntax
+                     syntax/free-vars
+                     syntax/parse)
          racket/contract
          racket/file
          racket/function
@@ -14,11 +12,12 @@
          racket/match
          racket/path
          racket/unix-socket
-         (for-syntax racket/base
-                     racket/syntax
-                     syntax/parse
-                     syntax/free-vars))
-
+         "loci-log.rkt"
+         (prefix-in ch: "locus-channel.rkt")
+         "locus-transferable_gen.rkt"
+         "locus_gen.rkt"
+         "path.rkt"
+         "utils.rkt")
 
 (provide
  locus
