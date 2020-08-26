@@ -1,4 +1,4 @@
-![CI](https://github.com/pmatos/racket-loci/workflows/CI/badge.svg?branch=master)
+[![CI](https://github.com/pmatos/racket-loci/workflows/CI/badge.svg?branch=master)](https://github.com/pmatos/racket-loci/actions)
 [![Scribble](https://img.shields.io/badge/Docs-Scribble-blue.svg)](https://pmatos.github.io/racket-loci)
 
 # racket-loci 
