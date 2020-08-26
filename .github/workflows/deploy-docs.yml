@@ -22,7 +22,7 @@ jobs:
       - name: Install package locally
         run: raco pkg install --auto --link -D loci
       - name: Build docs
-        run: raco scribble --htmls loci/scribblings/loci.scrbl
+        run: raco scribble --htmls --dest documentation loci/scribblings/loci.scrbl
       - name: Install SSH Client 🔑
         uses: webfactory/ssh-agent@v0.2.0
         with:
