@@ -22,6 +22,3 @@ Most of this work was inspired on the implementation of racket places from which
 
 * Implement remote loci
 
-## Sponsor
-
-This work is sponsored by [Linki Tools](https://linki.tools).
