@@ -20,7 +20,7 @@ jobs:
           variant: 'CS'
           version: 'current'
       - name: Install package locally
-        run: raco pkg install --auto -D .
+        run: raco pkg install --auto --link -D loci
       - name: Build docs
         run: raco scribble --htmls loci/scribblings/loci.scrbl
       - name: Install SSH Client 🔑
