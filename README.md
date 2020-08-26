@@ -1,8 +1,7 @@
+![CI](https://github.com/pmatos/racket-loci/workflows/CI/badge.svg?branch=master)
 [![Scribble](https://img.shields.io/badge/Docs-Scribble-blue.svg)](https://pmatos.github.io/racket-loci)
 
 # racket-loci 
-
-![CI](https://github.com/pmatos/racket-loci/workflows/CI/badge.svg?branch=master)
 
 Implementation of local and remote loci for Racket.
 
