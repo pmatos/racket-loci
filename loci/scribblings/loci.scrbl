@@ -95,7 +95,7 @@ The @racket[locus] binding is protected in the same way as
   Like @racket[locus], but @racket[body ...] may have free lexical
   variables, which are automatically sent to the newly-created locus.
   Note that these variables must have values accepted by
-  @racket[locus-message-allowed?], otherwise an @exnraise[exn:fail:contract].
+  @racket[locus-message-allowed?], otherwise an @racket[exn:fail:contract] exception is raised.
 }
 
 @defproc[(locus-wait [l locus?]) exact-integer?]{
