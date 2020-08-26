@@ -2,8 +2,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (require racket/match
-         syntax/modresolve
-         racket/path)
+         racket/path
+         syntax/modresolve)
 
 (provide mod->bytes bytes->mod)
 
