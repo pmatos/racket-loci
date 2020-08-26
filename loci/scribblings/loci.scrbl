@@ -72,6 +72,59 @@ properly due to memory allocation inter-thread locking.
   parameters are connected to the ports in the creating locus. 
 }
 
+@defform[(locus id body ...+)] {
+  Creates a locus that evaluates @racket[body]
+  expressions with @racket[id] bound to a locus channel.  The
+  @racket[body]s close only over @racket[id] plus the top-level
+  bindings of the enclosing module, because the
+  @racket[body]s are lifted to a submodule.
+  The result of @racket[locus] is a locus descriptor,
+  like the result of @racket[dynamic-locus].
+
+The generated submodule has the name @racketidfont{locus-body-@racket[_n]}
+for an integer @racket[_n], and the submodule exports a @racket[main]
+function that takes a locus channel for the new locus. The submodule
+is not intended for use, however, except by the expansion of the
+@racket[locus] form.
+
+The @racket[locus] binding is protected in the same way as
+ @racket[dynamic-locus].
+ }
+
+@defform[(locus/context id body ...+)]{
+  Like @racket[locus], but @racket[body ...] may have free lexical
+  variables, which are automatically sent to the newly-created locus.
+  Note that these variables must have values accepted by
+  @racket[locus-message-allowed?], otherwise an @exnraise[exn:fail:contract].
+}
+
+@defproc[(locus-wait [l locus?]) exact-integer?]{
+  Returns the @tech{completion value} of the locus indicated by @racket[l],
+  blocking until the locus has terminated.
+
+  If any pumping threads were created to connect a
+  non-@tech{file-stream port} to the ports in the locus for @racket[l]
+  (see @racket[dynamic-locus]), @racket[locus-wait] returns only when
+  the pumping threads have completed.  }
+
+@defproc[(locus-dead-evt [l locus?]) evt?]{
+
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
+@tech{ready for synchronization} if and only if @racket[l] has terminated.
+@ResultItself{locus-dead event}.
+
+If any pumping threads were created to connect a non-@tech{file-stream
+  port} to the ports in the locus for @racket[l] (see
+  @racket[dynamic-locus]), the event returned by
+  @racket[locus-dead-evt] may become ready even if a pumping thread is
+  still running.}
+
+@defproc[(locus-kill [l locus?]) void?]{
+  Immediately terminates the locus, setting the locus'
+  @tech{completion value} to @racket[1] if the locus does not have a
+  completion value already.}
+
+
 @section[#:tag "motivation"]{Motivation}
 
 Given a problem that requires parallelism, where you use all the
