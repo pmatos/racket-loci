@@ -22,7 +22,7 @@ jobs:
       - name: Install package locally
         run: raco pkg install --auto --link -D loci
       - name: Build docs
-        run: raco scribble --html --dest documentation loci/scribblings/loci.scrbl
+        run: raco scribble --html --dest documentation --dest-name index loci/scribblings/loci.scrbl
       - name: Install SSH Client 🔑
         uses: webfactory/ssh-agent@v0.2.0
         with:
@@ -33,4 +33,4 @@ jobs:
         with:
           SSH: true
           BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: documentation/loci # The folder the action should deploy.
+          FOLDER: documentation # The folder the action should deploy.
