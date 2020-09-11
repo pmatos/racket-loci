@@ -93,8 +93,7 @@
   #:property prop:evt
   (lambda (s)
     (wrap-evt (local-locus-subproc (locus-dead-evt-locus s))
-              (lambda (subproc)
-                (locus-dead-evt-locus s)))))
+              (lambda (subproc) s))))
 
 ;; dynamic-locus
 ;; Based on the implementation of place-process in

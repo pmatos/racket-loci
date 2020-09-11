@@ -98,10 +98,16 @@
        (printf "All done~n")
        (print-factorial-table cache)]
       [else
+       ; like locus-dead-evt but whose sync value
+       ; is the dead locus
+       (define evt-dead
+         (lambda (p)
+           (wrap-evt (locus-dead-evt p)
+                     (lambda (v) p))))
 
        (sync
         (handle-evt
-         (apply choice-evt (map locus-dead-evt (hash-values active-workers)))
+         (apply choice-evt (map dead-evt (hash-values active-workers)))
          (lambda (l)
            (printf "A locus died~n")
            (if (zero? (locus-wait l))
