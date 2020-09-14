@@ -107,7 +107,7 @@
 
        (sync
         (handle-evt
-         (apply choice-evt (map dead-evt (hash-values active-workers)))
+         (apply choice-evt (map evt-dead (hash-values active-workers)))
          (lambda (l)
            (printf "A locus died~n")
            (if (zero? (locus-wait l))
